@@ -337,5 +337,80 @@
 							}, 275);
 
 						});
+				function getWeatherDescription(code) {
+					var descriptions = {
+						0: 'Clear sky',
+						1: 'Mainly clear',
+						2: 'Partly cloudy',
+						3: 'Overcast',
+						45: 'Fog',
+						48: 'Depositing rime fog',
+						51: 'Light drizzle',
+						53: 'Moderate drizzle',
+						55: 'Dense drizzle',
+						56: 'Light freezing drizzle',
+						57: 'Dense freezing drizzle',
+						61: 'Slight rain',
+						63: 'Moderate rain',
+						65: 'Heavy rain',
+						66: 'Light freezing rain',
+						67: 'Heavy freezing rain',
+						71: 'Slight snow fall',
+						73: 'Moderate snow fall',
+						75: 'Heavy snow fall',
+						77: 'Snow grains',
+						80: 'Slight rain showers',
+						81: 'Moderate rain showers',
+						82: 'Violent rain showers',
+						85: 'Slight snow showers',
+						86: 'Heavy snow showers',
+						95: 'Thunderstorm',
+						96: 'Thunderstorm with hail',
+						99: 'Thunderstorm with heavy hail'
+					};
+					return descriptions[code] || 'Unknown weather';
+				}
 
+				function displayWeatherHtml(html) {
+					$('#weather-widget').html(html);
+				}
+
+				function fetchWeather(latitude, longitude, locationLabel) {
+					var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current_weather=true&timezone=auto';
+
+					fetch(url)
+						.then(function(response) {
+							return response.ok ? response.json() : Promise.reject('Weather API error.');
+						})
+						.then(function(data) {
+							if (!data || !data.current_weather) {
+								throw new Error('No current weather data.');
+							}
+
+							var weather = data.current_weather;
+							var description = getWeatherDescription(weather.weathercode);
+							var html = '<p><strong>' + locationLabel + '</strong></p>' +
+								'<p>' + description + ' • ' + weather.temperature + ' °C • Wind ' + weather.windspeed + ' km/h</p>';
+
+							displayWeatherHtml(html);
+						})
+						.catch(function(error) {
+							displayWeatherHtml('<p>Unable to load weather data.</p><p>' + error + '</p>');
+						});
+				}
+
+				function loadWeather() {
+					if (!navigator.geolocation) {
+						fetchWeather(13.0827, 80.2707, 'Weather for Chennai, India');
+						return;
+					}
+
+					navigator.geolocation.getCurrentPosition(function(position) {
+						fetchWeather(position.coords.latitude, position.coords.longitude, 'Weather for your location');
+					}, function() {
+						fetchWeather(13.0827, 80.2707, 'Weather for Chennai, India');
+					}, { timeout: 8000 });
+				}
+
+				loadWeather();
 })(jQuery);
